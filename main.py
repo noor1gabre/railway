@@ -81,18 +81,22 @@ def home():
 async def upload_image(file: UploadFile = File(...)):
     try:
         # 1. Generate unique filename
-        file_extension = file.filename.split(".")[-1]
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else "bin"
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         
-        # 2. Upload to Cloudflare R2
+        # 2. Fix: Handle Missing Content-Type (عشان المشكلة دي متتكررش)
+        # لو مفيش نوع، هنعتبره ملف عام (application/octet-stream)
+        content_type = file.content_type or "application/octet-stream"
+        
+        # 3. Upload to Cloudflare R2
         s3_client.upload_fileobj(
             file.file, 
             BUCKET_NAME, 
             unique_filename,
-            ExtraArgs={'ContentType': file.content_type} 
+            ExtraArgs={'ContentType': content_type} 
         )
         
-        # 3. Construct URL
+        # 4. Construct URL
         image_url = f"{R2_PUBLIC_DOMAIN}/{unique_filename}"
         
         return {"status": "success", "url": image_url}
