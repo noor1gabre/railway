@@ -1,0 +1,19 @@
+# Ignore specific file types
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.docx
+# Ignore specific folders (لو عندك فولدر للصور المحلية)
+uploads/
+images/
+
+# Python essentials (مهم جداً عشان متعملش مشاكل)
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node/Next.js essentials
+node_modules/
+.next/
