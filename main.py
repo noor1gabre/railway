@@ -22,8 +22,9 @@ R2_PUBLIC_DOMAIN="https://pub-9d8e69f9b5e6474d90bccbed1591bca8.r2.dev"
 s3_client = boto3.client(
     service_name='s3',
     endpoint_url=f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com",
-    aws_access_key_id=ACCOUNT_ID,
+    aws_access_key_id=ACCESS_KEY,
     aws_secret_access_key=SECRET_KEY,
+    region_name='auto'
 )
 
 # ==========================================
