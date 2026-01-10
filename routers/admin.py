@@ -18,7 +18,63 @@ s3_client = boto3.client(
     aws_secret_access_key=R2_SECRET_ACCESS_KEY,
     region_name='auto'
 )
+# 1. Update Product (تعديل منتج)
+@router.put("/products/{product_id}", response_model=ProductRead)
+def update_product(
+    product_id: int,
+    name: str = Form(None),       # اختياري: لو مبعتش اسم مش هيتغير
+    price: float = Form(None),
+    category: str = Form(None),
+    description: str = Form(None),
+    file: UploadFile = File(None), # اختياري: لو مبعتش صورة هتفضل القديمة
+    session: Session = Depends(get_session),
+    admin: User = Depends(get_current_admin)
+):
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
 
+    # تحديث البيانات النصية لو اتبعتت
+    if name: product.name = name
+    if price: product.price = price
+    if category: product.category = category
+    if description: product.description = description
+
+    # تحديث الصورة لو اتبعتت صورة جديدة
+    if file:
+        try:
+            file_ext = mimetypes.guess_extension(file.content_type) or ".bin"
+            unique_name = f"{uuid.uuid4()}{file_ext}"
+            content_type = file.content_type or "application/octet-stream"
+            
+            s3_client.upload_fileobj(
+                file.file, R2_BUCKET_NAME, unique_name,
+                ExtraArgs={'ContentType': content_type}
+            )
+            # تحديث الرابط في الداتابيز
+            product.image_url = f"{R2_PUBLIC_DOMAIN}/{unique_name}"
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Upload Failed: {str(e)}")
+
+    session.add(product)
+    session.commit()
+    session.refresh(product)
+    return product
+
+# 2. Delete Product (حذف منتج)
+@router.delete("/products/{product_id}")
+def delete_product(
+    product_id: int, 
+    session: Session = Depends(get_session),
+    admin: User = Depends(get_current_admin)
+):
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    session.delete(product)
+    session.commit()
+    return {"status": "deleted", "product_id": product_id}
 @router.post("/products", response_model=ProductRead)
 def create_product(
     name: str = Form(...), 
