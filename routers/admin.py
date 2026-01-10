@@ -77,6 +77,10 @@ def delete_product(
     session.delete(product)
     session.commit()
     return {"status": "deleted", "product_id": product_id}
+@router.get("/profile", response_model=UserRead)
+def get_admin_profile(current_admin: User = Depends(get_current_admin)):
+ 
+    return current_admin
 @router.put("/settings", response_model=UserRead)
 def update_admin_settings(
     settings: UserUpdate,
