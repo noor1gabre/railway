@@ -1,6 +1,6 @@
 import uuid
 import boto3
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from schemas.product import ProductRead
 from sqlmodel import Session
 from db.database import get_session
@@ -21,10 +21,10 @@ s3_client = boto3.client(
 
 @router.post("/products", response_model=ProductRead)
 def create_product(
-    name: str, 
-    price: float, 
-    category: str,
-    description: str = None,
+    name: str = Form(...), 
+    price: float = Form(...), 
+    category: str = Form(...),
+    description: str = Form(None),
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
     admin: User = Depends(get_current_admin)
