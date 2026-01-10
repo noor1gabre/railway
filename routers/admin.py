@@ -1,6 +1,7 @@
 import uuid
 import boto3
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from schemas.product import ProductRead
 from sqlmodel import Session
 from db.database import get_session
 from models.product import Product
@@ -10,7 +11,6 @@ from core.config import R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R
 
 router = APIRouter()
 
-# إعداد R2 Client مرة واحدة
 s3_client = boto3.client(
     service_name='s3',
     endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
@@ -19,7 +19,7 @@ s3_client = boto3.client(
     region_name='auto'
 )
 
-@router.post("/products")
+@router.post("/products", response_model=ProductRead)
 def create_product(
     name: str, 
     price: float, 
@@ -27,9 +27,8 @@ def create_product(
     description: str = None,
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
-    admin: User = Depends(get_current_admin)  # 🔒 الحماية هنا
+    admin: User = Depends(get_current_admin)
 ):
-    # 1. رفع الصورة لـ Cloudflare
     try:
         file_ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
         unique_name = f"{uuid.uuid4()}.{file_ext}"
@@ -43,7 +42,6 @@ def create_product(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload Failed: {str(e)}")
 
-    # 2. حفظ المنتج في الداتابيز
     product = Product(
         name=name, price=price, description=description, 
         category=category, image_url=image_url
