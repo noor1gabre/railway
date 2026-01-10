@@ -1,8 +1,10 @@
 import uuid
 import boto3
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+from core.security import get_password_hash
 from schemas.product import ProductRead
-from sqlmodel import Session
+from schemas.user import UserRead, UserUpdate
+from sqlmodel import Session, select
 from db.database import get_session
 from models.product import Product
 from models.user import User
@@ -75,6 +77,36 @@ def delete_product(
     session.delete(product)
     session.commit()
     return {"status": "deleted", "product_id": product_id}
+@router.put("/settings", response_model=UserRead)
+def update_admin_settings(
+    settings: UserUpdate,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin)
+):
+    # 1. لو بيحاول يغير الإيميل، نتأكد إنه مش محجوز لحد تاني
+    if settings.email and settings.email != current_admin.email:
+        existing_user = session.exec(select(User).where(User.email == settings.email)).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        current_admin.email = settings.email
+
+    # 2. تحديث باقي البيانات
+    if settings.full_name:
+        current_admin.full_name = settings.full_name
+    
+    if settings.whatsapp_number:
+        current_admin.whatsapp_number = settings.whatsapp_number
+
+    # 3. تحديث الباسورد لو موجود
+    if settings.password:
+        current_admin.password_hash = get_password_hash(settings.password)
+
+    # 4. الحفظ في الداتابيز
+    session.add(current_admin)
+    session.commit()
+    session.refresh(current_admin)
+    
+    return current_admin
 @router.post("/products", response_model=ProductRead)
 def create_product(
     name: str = Form(...), 
