@@ -8,7 +8,7 @@ from models.product import Product
 from models.user import User
 from core.deps import get_current_admin
 from core.config import R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_DOMAIN
-
+import mimetypes
 router = APIRouter()
 
 s3_client = boto3.client(
@@ -30,8 +30,8 @@ def create_product(
     admin: User = Depends(get_current_admin)
 ):
     try:
-        file_ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
-        unique_name = f"{uuid.uuid4()}.{file_ext}"
+        file_ext = mimetypes.guess_extension(file.content_type) or ".bin"
+        unique_name = f"{uuid.uuid4()}{file_ext}"
         content_type = file.content_type or "application/octet-stream"
         
         s3_client.upload_fileobj(
