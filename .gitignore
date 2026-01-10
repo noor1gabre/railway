@@ -4,10 +4,11 @@
 *.jpeg
 *.pdf
 *.docx
+*.mp4
 # Ignore specific folders (لو عندك فولدر للصور المحلية)
 uploads/
 images/
-
+.env
 # Python essentials (مهم جداً عشان متعملش مشاكل)
 __pycache__/
 *.pyc
